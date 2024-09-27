@@ -1,0 +1,68 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CurrentLandCoverUpdate
+
+struct Land
+{
+    float2 coord;
+    float landResistanceIndex;
+    float appearanceThreshold;
+    float landXTh;
+    float4 landColor;
+};
+
+int width;
+int height;
+
+float deltaTime;
+float agentTerrainImpact;
+
+RWTexture2D<float4> DiffusedTrailMap;
+
+RWTexture2D<float4> OriginalLandColorMap;
+RWTexture2D<float4> CurrentLandColorMap;
+
+//RWStructuredBuffer<Land> originalLandMapData;
+//RWStructuredBuffer<Land> currentLandMapData;
+
+
+[numthreads(8,8,1)]
+void CurrentLandCoverUpdate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float4 originalLand = OriginalLandColorMap[id.xy];
+    float4 diffusedTrailImpact = DiffusedTrailMap[id.xy];
+    
+    CurrentLandColorMap[id.xy] = max(1, min(originalLand, originalLand - diffusedTrailImpact * agentTerrainImpact));
+    
+    //for (int i = 0; i < width * height; i++)
+    //{
+    //    currentLandMapData[id.x + width * (id.y - 1)].coord = float2(id.x, id.y);
+    //    currentLandMapData[id.x + width * (id.y - 1)].landResistanceIndex = max(1, min(originalLandMapData[id.x + width * (id.y - 1)].landResistanceIndex, originalLandMapData[id.x + width * (id.y - 1)].landResistanceIndex - diffusedTrailImpact * agentTerrainImpact));
+    //    currentLandMapData[id.x + width * (id.y - 1)].appearanceThreshold = originalLandMapData[id.x + width * (id.y - 1)].appearanceThreshold;
+    //    currentLandMapData[id.x + width * (id.y - 1)].landXTh = originalLandMapData[id.x + width * (id.y - 1)].landXTh;
+    //    currentLandMapData[id.x + width * (id.y - 1)].landColor = originalLandMapData[id.x + width * (id.y - 1)].landColor;
+        
+    //}
+}
+
+
+//#pragma kernel CurrentTerrainUpdate
+
+//[numthreads(8, 8, 1)]
+//void CurrentTerrainUpdate(uint3 id : SV_DispatchThreadID)
+//{
+//    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+//    {
+//        return;
+//    }
+    
+//    float4 originalLand = OriginalLandCoverMap[id.xy];
+//    float4 diffusedTrailImpact = DiffusedTrailMap[id.xy];
+    
+//    CurrentHeightMap[id.xy] = min(originalLand, originalLand - diffusedTrailImpact * agentTerrainImpact);
+
+//}

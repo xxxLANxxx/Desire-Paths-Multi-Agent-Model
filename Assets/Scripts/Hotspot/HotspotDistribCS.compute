@@ -1,0 +1,103 @@
+#pragma kernel HotspotDistribUpdate
+
+struct Hotspot
+{
+    float2 location;
+    int visitFreq;
+    float attractiveness;
+};
+
+RWStructuredBuffer<Hotspot> hotspots;
+int numHotspots;
+
+RWTexture2D<float4> HotspotDistribMap;
+int width;
+int height;
+
+[numthreads(8, 8, 1)]
+void HotspotDistribUpdate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) numHotspots)
+    {
+        return;
+    }
+    
+    Hotspot hotspot = hotspots[id.x];
+    
+    int cellX = hotspot.location.x;
+    int cellY = hotspot.location.y;
+    
+    HotspotDistribMap[int2(cellX, cellY)] = float4(1.0, 1.0, 1.0, 1.0);
+
+}
+
+
+#pragma kernel SimpleDistribPatch
+
+RWTexture2D<float4> SimplePatchMap;
+
+float scaleFactor;
+
+[numthreads(16, 16, 1)]
+void SimpleDistribPatch(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    // Compute diffuse color
+    float4 diffuseColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
+    float2 pixelCoord = id.xy;
+    
+    // Iterate over each point
+    for (int i = 0; i < numHotspots; i++)
+    {
+        Hotspot hotspot = hotspots[i];
+        
+        // Calculate distance and influence
+        float dist = distance(pixelCoord, hotspot.location);
+
+        if (dist < scaleFactor)
+        {
+            diffuseColor += 1.0;
+        }
+    }
+
+    SimplePatchMap[id.xy] = scaleFactor * diffuseColor;
+
+}
+
+
+#pragma kernel VisitFreqPatch
+
+RWTexture2D<float4> VisitFreqPatchMap;
+
+[numthreads(16, 16, 1)]
+void VisitFreqPatch(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    // Compute diffuse color
+    float4 diffuseColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
+    float2 pixelCoord = id.xy;
+    
+    // Iterate over each point
+    for (int i = 0; i < numHotspots; i++)
+    {
+        Hotspot hotspot = hotspots[i];
+        
+        // Calculate distance and influence
+        float dist = distance(pixelCoord, hotspot.location);
+
+        if (dist < hotspot.attractiveness * scaleFactor)
+        {
+            diffuseColor += 1.0;
+        }
+    }
+    
+    VisitFreqPatchMap[id.xy] = diffuseColor;
+}

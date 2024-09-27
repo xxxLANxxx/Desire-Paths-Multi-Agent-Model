@@ -1,0 +1,58 @@
+// Define quadtree node structure
+struct QuadTreeNode
+{
+    float2 center;
+    float size;
+    uint dataOffset;
+    uint dataCount;
+};
+
+// Define quadtree data structure
+StructuredBuffer<float2> dataPoints; // Assume each data point has a 2D position
+
+// Define quadtree node buffer
+StructuredBuffer<QuadTreeNode> quadtreeNodes;
+
+// Function to determine which quadrant contains the query point
+int DetermineQuadrant(float2 queryPoint, float2 center)
+{
+    return (queryPoint.x > center.x ? 1 : 0) + (queryPoint.y > center.y ? 2 : 0);
+}
+
+
+// Function to find the leaf node containing the query point
+int FindLeafNode(float2 queryPoint)
+{
+    int nodeIndex = 0; // Start from the root node
+
+    // Traverse the quadtree until reaching a leaf node
+    while (quadtreeNodes[nodeIndex].dataCount == 0)
+    {
+        QuadTreeNode node = quadtreeNodes[nodeIndex];
+
+        // Determine which quadrant contains the query point
+        int quadrant = DetermineQuadrant(queryPoint, node.center);
+
+        // Update node index to the child node in the appropriate quadrant
+        nodeIndex = nodeIndex * 4 + quadrant;
+    }
+
+    return nodeIndex;
+}
+
+
+// Perform spatial query using quadtree
+[numthreads(1, 1, 1)]
+void QueryDataInQuadtree(float2 queryPoint)
+{
+    // Find the leaf node containing the query point
+    int nodeIndex = FindLeafNode(queryPoint);
+
+    // Retrieve data associated with the leaf node
+    QuadTreeNode node = quadtreeNodes[nodeIndex];
+    for (uint i = node.dataOffset; i < node.dataOffset + node.dataCount; ++i)
+    {
+        float2 dataPoint = dataPoints[i];
+        // Process data point within the query region
+    }
+}

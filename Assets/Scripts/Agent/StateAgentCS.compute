@@ -1,0 +1,160 @@
+#pragma kernel UpdateStateMap
+
+struct Agent
+{
+    float2 position;
+    float angle;
+    int4 speciesMask;
+    int speciesIndex;
+    float moveSpeed;
+    float turnSpeed;
+    
+    int prevState;
+    int freeToMove;
+};
+
+struct SpeciesSettings
+{
+    float moveSpeed;
+    float turnSpeed;
+
+    float sensorAngleDegrees;
+    float sensorOffsetDst;
+    int sensorSize;
+	
+    float4 colour;
+};
+
+struct StateAgentDataStruct
+{
+    int agentsOnTrailCount;
+    int freeAgentsCount;
+};
+
+RWStructuredBuffer<Agent> agents;
+uint numAgents;
+
+StructuredBuffer<SpeciesSettings> speciesSettings;
+
+RWTexture2D<float4> AgentPositionMap;
+
+
+//[numthreads(16, 1, 1)]
+//void DrawAgentMap(uint3 id : SV_DispatchThreadID)
+//{
+//    if (id.x >= numAgents)
+//    {
+//        return;
+//    }
+
+
+//    Agent agent = agents[id.x];
+//    SpeciesSettings settings = speciesSettings[agent.speciesIndex];
+//	// Draw to trail map
+//    int cellX = (int) agent.position.x;
+//    int cellY = (int) agent.position.y;
+	
+//    TargetTexture[int2(cellX, cellY)] = settings.colour;
+
+//}
+
+int width;
+int height;
+
+int agentStateThreshold;
+int checkAreaBoundary;
+
+RWTexture2D<float4> StateAgentMap;
+
+
+[numthreads(16, 1, 1)]
+void UpdateStateMap(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents)
+    {
+        return;
+    }
+
+    Agent agent = agents[id.x];
+    //SpeciesSettings settings = speciesSettings[agent.speciesIndex];
+    
+    //StateAgentDataStruct data = stateAgentData[0];
+    //data.countAgentsOnTrail += 1;
+    //int maxNeighbouringAgentCount = ((2 * checkAreaBoundary) + 1) * ((2 * checkAreaBoundary) + 1) - 1;
+    //int shrinkCheckAgentCount = getNeighbouringAgentsCount(AgentPositionTexture, agent, checkAreaBoundary);
+    agent.prevState = agent.freeToMove;
+
+    
+    //for (int offsetGrowthX = -checkAreaBoundary; offsetGrowthX <= checkAreaBoundary; offsetGrowthX++)
+    //{
+    //    for (int offsetGrowthY = -checkAreaBoundary; offsetGrowthY <= checkAreaBoundary; offsetGrowthY++)
+    //    {
+    //        int sampleGrowthX = min(width - 1, max(0, (int) agent.position.x + offsetGrowthX));
+    //        int sampleGrowthY = min(height - 1, max(0, (int) agent.position.y + offsetGrowthY));
+			
+    //        if (AgentPositionMap[int2(sampleGrowthX, sampleGrowthY)].x > 0 && 
+    //            AgentPositionMap[int2(sampleGrowthX, sampleGrowthY)].y > 0)
+    //        {
+    //            agent.neighbourAgentCount += 1;
+    //        }
+			
+    //    }
+    //}
+    
+    // We don't count the agent itself
+    //agent.neighbourAgentCount--;
+
+    //if (agent.neighbourAgentCount >= agentStateThreshold)
+    //{
+    //    agent.freeToMove = 0;
+    //    StateAgentMap[int2(agent.position)] = float4(width, 0.0, 0.0, 0.0);
+        
+    //    //data.countAgentsOnTrail += 1;
+    //    //if (agent.freetomove != agent.prevstate)
+    //    //{
+    //    //    //data.agentsOnTrailCount += 1;
+    //    //    //data.countFreeAgents -= 1;
+    //    //}
+        
+    //}
+    //else
+    //{
+    //    agent.freeToMove = 1;
+    //    StateAgentMap[int2(agent.position)] = float4(0.0, 0.0, height, 0.0);
+        
+    //    //if (agent.freetomove != agent.prevstate)
+    //    //{
+    //    //    //data.countAgentsOnTrail -= 1;
+    //    //    //data.countFreeAgents += 1;
+    //    //}
+    //}
+    
+}
+
+#pragma kernel UpdateEvaluation
+
+RWStructuredBuffer<StateAgentDataStruct> states;
+
+[numthreads(16, 16, 1)]
+void UpdateEvaluation(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    Agent agent = agents[id.x];
+    
+    StateAgentDataStruct data = states[0];
+    data.agentsOnTrailCount = 200;
+    data.freeAgentsCount = 200;
+    
+    if (StateAgentMap[id.xy].x > 0.0)
+    {
+        data.agentsOnTrailCount += 1;
+    }
+    else if (StateAgentMap[id.xy].z > 0.0)
+    {
+        data.freeAgentsCount += 1;
+    }
+    
+}

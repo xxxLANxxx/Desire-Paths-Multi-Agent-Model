@@ -1,0 +1,57 @@
+#pragma kernel CSMain
+
+// Define the texture and other variables
+RWTexture2D<float4> Result;
+RWTexture2D<float4> TempBuffer;
+float time;
+
+int width;
+int height;
+
+float2 initPos1;
+float2 initPos2;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float2 newPos1 = initPos1 + float2(0.15, 0.3) * time * 120;
+    float2 newPos2 = initPos2 + float2(-0.15, 0.3) * time * 80;
+    
+    //InterlockedAdd(TempBuffer[int2(newPos)], 1);
+    //InterlockedAdd(TempBuffer[int2(newPos2)], 1);
+    
+    TempBuffer[int2(newPos1)] += 1.0f / 5.0f;
+    TempBuffer[int2(newPos2)] += 1.0f / 5.0f;
+    
+    // Write the color to the texture
+    //Result[int2(newPos1)] += TempBuffer[int2(newPos1)];
+    //Result[int2(newPos2)] += TempBuffer[int2(newPos2)];
+    
+    Result[int2(newPos1)] += TempBuffer[int2(newPos1)];
+    Result[int2(newPos2)] += TempBuffer[int2(newPos2)];
+    
+    TempBuffer[id.xy] = 0.0;
+}
+
+//#pragma kernel ApplyChanges
+
+
+//[numthreads(8, 8, 1)]
+//void ApplyChanges(uint3 id : SV_DispatchThreadID)
+//{
+//    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+//    {
+//        return;
+//    }
+    
+//    // Apply accumulated changes to the result texture
+//    Result[id.xy] += TempBuffer[id.xy];
+
+//    // Clear the temporary buffer for the next frame
+//    TempBuffer[id.xy] = 0.0;
+//}

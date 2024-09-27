@@ -1,0 +1,40 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel RandomGPUTest
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+float4 resolution;
+
+float time;
+
+uint hash(uint state)
+{
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    return state;
+}
+
+float scaleToRange01(uint state)
+{
+    return state / 4294967295.0;
+}
+
+[numthreads(16,16,1)]
+void RandomGPUTest (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) resolution.x || id.y < 0 || id.y >= (uint) resolution.y)
+    {
+        return;
+    }
+    
+    int pixelIndex = id.y * resolution.x + id.x;
+    //uint pseudoRandomNumber = hash(pixelIndex);
+    uint pseudoRandomNumber = hash(id.y * resolution.x + id.x + hash(id.x + time * 100000));
+    
+    Result[id.xy] = scaleToRange01(pseudoRandomNumber);
+}

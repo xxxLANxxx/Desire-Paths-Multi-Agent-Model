@@ -1,0 +1,442 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96d139fbea815840be29151cfb684f5, type: 3}
+  m_Name: Periodic Hexagon
+  m_EditorClassIdentifier: 
+  siteSettings:
+  - location: {x: 0.1, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.2, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.3, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.4, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.5, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.6, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.7, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.8, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.9, y: 0.9}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.05, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.15, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.25, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.35, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.45, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.55, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.65, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.75, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.85, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.95, y: 0.8}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.1, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.2, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.3, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.4, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.5, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.6, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.7, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.8, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.9, y: 0.7}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.05, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.15, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.25, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.35, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.45, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.55, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.65, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.75, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.85, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.95, y: 0.6}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.1, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.2, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.3, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.4, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.5, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.6, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.7, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.8, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.9, y: 0.5}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.05, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.15, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.25, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.35, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.45, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.55, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.65, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.75, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.85, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.95, y: 0.4}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.1, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.2, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.3, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.4, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.5, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.6, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.7, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.8, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.9, y: 0.3}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.05, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.15, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.25, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.35, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.45, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.55, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.65, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.75, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.85, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.95, y: 0.2}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.1, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.2, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.3, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.4, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.5, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.6, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.7, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.8, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  - location: {x: 0.9, y: 0.1}
+    radius: 1
+    concentration: 1
+    siteType: 0
+    name: 
+  diffuseValue: 25
+  evaporateValue: 0

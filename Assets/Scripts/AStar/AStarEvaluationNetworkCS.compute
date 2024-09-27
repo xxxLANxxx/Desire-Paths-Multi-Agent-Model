@@ -1,0 +1,30 @@
+#pragma kernel FlowFieldEvaluation
+
+RWTexture2D<float4> networkTexture;
+RWTexture2D<float4> resultingNetworkTexture;
+
+RWTexture2D<int> flowFieldTexture;
+
+[numthreads(8, 8, 1)]
+void FlowFieldEvaluation(uint3 id : SV_DispatchThreadID)
+{
+    if (networkTexture[id.xy].r > 0)
+    {
+        flowFieldTexture[id.xy] = 1;
+    }
+    else
+    {
+        flowFieldTexture[id.xy] = 0;
+    }
+}
+
+#pragma kernel AStarEvaluation
+
+
+
+[numthreads(8, 8, 1)]
+void AStarPathFinder(uint3 id : SV_DispatchThreadID)
+{
+    
+}
+

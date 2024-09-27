@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c02d1d976727a134e9fd071bdc6b2dbb, type: 3}
+  m_Name: TMAffordanceSet
+  m_EditorClassIdentifier: 
+  transportModes:
+  - affColor: {r: 0.01183696, g: 0.1392774, b: 0.3584906, a: 0}
+    minAffTh: 0
+    maxAffTh: 0.2
+    TMSpeed: 11.5
+    numPassing: 0.1
+  - affColor: {r: 0, g: 0.7686275, b: 1, a: 0}
+    minAffTh: 0.2
+    maxAffTh: 0.4
+    TMSpeed: 28.5
+    numPassing: 0.27
+  - affColor: {r: 0, g: 1, b: 0, a: 0}
+    minAffTh: 0.4
+    maxAffTh: 0.6
+    TMSpeed: 51.5
+    numPassing: 0.367
+  - affColor: {r: 1, g: 1, b: 0, a: 0}
+    minAffTh: 0.6
+    maxAffTh: 0.8
+    TMSpeed: 98.3
+    numPassing: 0.593
+  - affColor: {r: 1, g: 0, b: 0, a: 0}
+    minAffTh: 0.8
+    maxAffTh: 1
+    TMSpeed: 149.2
+    numPassing: 0.796

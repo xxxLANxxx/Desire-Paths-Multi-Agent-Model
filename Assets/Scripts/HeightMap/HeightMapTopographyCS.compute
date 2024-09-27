@@ -1,0 +1,144 @@
+#pragma kernel HeightMapTopographyUpdate
+
+
+int numHeightLayers;
+
+RWTexture2D<float4> OriginalHeightMap;
+
+RWTexture2D<float4> TopographyMap;
+
+int height;
+int width;
+
+
+RWStructuredBuffer<float4> affordanceScale;
+float4 customTopographyColor;
+
+bool bColorScaledTopographyMode;
+
+[numthreads(8, 8, 1)]
+void HeightMapTopographyUpdate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float4 heightmap = OriginalHeightMap[id.xy];
+    
+    for (int i = 0; i < numHeightLayers; i++)
+    {
+        float4 scaleTh = i / float(numHeightLayers);
+        if (heightmap.x >= scaleTh.x
+            && heightmap.y >= scaleTh.y
+            && heightmap.z >= scaleTh.z
+            && heightmap.w >= scaleTh.w
+            )
+        {
+            TopographyMap[id.xy] = scaleTh;
+        }
+        
+    }
+
+}
+
+
+#pragma kernel HeightMapColorScaledUpdate
+
+
+RWTexture2D<float4> ColorScaledMap;
+
+
+[numthreads(8, 8, 1)]
+void HeightMapColorScaledUpdate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float4 heightmap = OriginalHeightMap[id.xy];
+    float4 topomap = TopographyMap[id.xy];
+    
+    if (bColorScaledTopographyMode)
+    {
+        //ColorScaledMap[id.xy] = affordanceScale[int(topomap.x * float(numHeightLayers))];
+        
+        
+        for (int i = 0; i < numHeightLayers; i++)
+        {
+            float4 scaleTh = i / float(numHeightLayers);
+            if (heightmap.x >= scaleTh.x
+            && heightmap.y >= scaleTh.y
+            && heightmap.z >= scaleTh.z
+            && heightmap.w >= scaleTh.w
+            )
+            {
+                ColorScaledMap[id.xy] = affordanceScale[i];
+            }
+        }
+    }
+    else
+    {
+        ColorScaledMap[id.xy] = topomap * customTopographyColor;
+    
+    }
+    
+}
+
+#pragma kernel HeightMapEdgeDetectionUpdate
+
+RWTexture2D<float4> EdgeDetectionMap;
+
+[numthreads(8, 8, 1)]
+
+void HeightMapEdgeDetectionUpdate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float4 heightmap = OriginalHeightMap[id.xy];
+
+    float4 centerPixel = TopographyMap[id.xy];
+    //float4 sum = centerPixel * -8.0;
+    float4 sum = centerPixel * -4.0f;
+
+    sum += TopographyMap[id.xy + uint2(1, 0)]; // right
+    sum += TopographyMap[id.xy - uint2(1, 0)]; // left
+    sum += TopographyMap[id.xy + uint2(0, 1)]; // top
+    sum += TopographyMap[id.xy - uint2(0, 1)]; // bottom
+
+    //sum += TopographyMap[id.xy + uint2(1, 1)]; // top right
+    //sum += TopographyMap[id.xy - uint2(1, 1)]; // bottom left
+    //sum += TopographyMap[id.xy + uint2(-1, 1)]; // top left
+    //sum += TopographyMap[id.xy + uint2(1, -1)]; // bottom right
+
+    if (sum.x != 0)
+    {
+        for (int i = 0; i < numHeightLayers; i++)
+        {
+            float4 scaleTh = float(i) / float(numHeightLayers);
+            if (heightmap.x >= scaleTh.x
+            && heightmap.y >= scaleTh.y
+            && heightmap.z >= scaleTh.z
+            && heightmap.w >= scaleTh.w
+            )
+            {
+                if (bColorScaledTopographyMode)
+                {
+                    EdgeDetectionMap[id.xy] = affordanceScale[i];
+                }
+                else
+                {
+                    EdgeDetectionMap[id.xy] = scaleTh * customTopographyColor;
+                }
+            }
+        }
+        
+        //EdgeDetectionMap[id.xy] = 1;
+    }
+    
+    
+}

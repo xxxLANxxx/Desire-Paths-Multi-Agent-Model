@@ -1,0 +1,21 @@
+#pragma kernel AStarPathFinder
+
+RWTexture2D<float4> heightmapTexture;
+RWTexture2D<float4> DiffusedNetworkMap;
+
+
+[numthreads(8,8,1)]
+void AStarPathFinder (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+#pragma kernel FlowField
+
+RWTexture2D<float4> flowFieldTexture;
+
+[numthreads(8, 8, 1)]
+void FlowField(uint3 id : SV_DispatchThreadID)
+{
+    
+}

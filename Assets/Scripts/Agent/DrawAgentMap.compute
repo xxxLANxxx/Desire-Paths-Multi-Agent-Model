@@ -1,0 +1,453 @@
+﻿#pragma kernel DrawAgentPresence
+
+struct Agent
+{
+    float2 position;
+    float angle;
+    int4 speciesMask;
+    int speciesIndex;
+
+    int siteIndexOrigin;
+    int siteIndexTarget;
+    int TMIndex;
+    int completeTravels;
+    int previousCompleteTravels;
+};
+
+struct SpeciesSettings
+{
+    
+    float moveSpeed;
+
+    int viewAngle;
+    int depthViewOffset;
+    int viewSensorWidth;
+
+    float4 colour;
+    
+};
+
+struct TransportMode
+{
+    float4 TMColor;
+    float minAffTh;
+    float maxAffTh;
+    float TMspeed;
+    float numPassing;
+};
+
+
+int width;
+int height;
+
+RWStructuredBuffer<Agent> agents;
+uint numAgents;
+
+StructuredBuffer<SpeciesSettings> speciesSettings;
+uint numSpecies;
+
+RWTexture2D<float4> AgentPresenceMap;
+
+int diffuseSize;
+uint totalCompleteTravels;
+
+
+[numthreads(16, 1, 1)]
+void DrawAgentPresence(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents)
+    {
+        return;
+    }
+
+    Agent agent = agents[id.x];
+    SpeciesSettings settings = speciesSettings[agent.speciesIndex];
+	
+    int cellX = (int) agent.position.x;
+    int cellY = (int) agent.position.y;
+    
+    AgentPresenceMap[int2(cellX, cellY)] = 1;
+}
+
+
+#pragma kernel DrawAgentImpact
+
+
+RWTexture2D<float4> AgentImpactMap;
+
+[numthreads(16, 1, 1)]
+void DrawAgentImpact(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents)
+    {
+        return;
+    }
+
+    Agent agent = agents[id.x];
+    //SpeciesSettings settings = speciesSettings[agent.speciesIndex];
+	
+    int cellX = (int) agent.position.x;
+    int cellY = (int) agent.position.y;
+    
+    for (int offsetX = -diffuseSize; offsetX <= diffuseSize; offsetX++)
+    {
+        for (int offsetY = -diffuseSize; offsetY <= diffuseSize; offsetY++)
+        {
+            int sampleX = min(width - 1, max(0, cellX + offsetX));
+            int sampleY = min(height - 1, max(0, cellY + offsetY));
+            
+            AgentImpactMap[int2(sampleX, sampleY)] = float((agent.previousCompleteTravels + 1) / totalCompleteTravels);
+            //AgentImpactMap[int2(sampleX, sampleY)] = float(1.0 / numAgents);
+        }
+    }
+    
+    
+    //AgentImpactMap[int2(cellX, cellY)] = float(1.0 / numAgents);
+    
+    //float4 actualimpact = saturate(AgentImpactMap[int2(cellX, cellY)] + float(settings.agentImpactFactor / 1024.0));
+    //float4 actualimpact = saturate(AgentImpactMap[int2(cellX, cellY)] + float(1.0 / numAgents));
+    //float4 actualimpact = saturate(float(1.0 / numAgents));
+    
+    //AgentImpactMap[int2(cellX, cellY)] = actualimpact;
+}
+
+
+#pragma kernel DrawErosion
+
+//uint numItPerGen;
+//uint numIt;
+
+RWTexture2D<float4> ErosionMap;
+
+[numthreads(16, 1, 1)]
+void DrawErosion(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents)
+    {
+        return;
+    }
+    
+    Agent agent = agents[id.x];
+	
+    int cellX = (int) agent.position.x;
+    int cellY = (int) agent.position.y;
+    
+    for (int offsetX = -diffuseSize; offsetX <= diffuseSize; offsetX++)
+    {
+        for (int offsetY = -diffuseSize; offsetY <= diffuseSize; offsetY++)
+        {
+            int sampleX = min(width - 1, max(0, cellX + offsetX));
+            int sampleY = min(height - 1, max(0, cellY + offsetY));
+            
+            ErosionMap[int2(sampleX, sampleY)] = saturate(ErosionMap[int2(sampleX, sampleY)] + float(1.0 / numAgents));
+        }
+    }
+
+}
+
+
+#pragma kernel DrawAffordance
+
+RWTexture2D<float4> TrailMap;
+RWTexture2D<float4> TransportsAffordanceMap;
+
+RWStructuredBuffer<TransportMode> transportModes;
+uint numTM;
+
+[numthreads(8, 8, 1)]
+void DrawAffordance(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float4 trailmap = TrailMap[id.xy];
+    
+    float4 affordColor = float4(0.0, 0.0, 0.0, 0.0);
+
+    if (trailmap.x == 0.0)
+    {
+        return;
+    }
+
+    for (uint i = 0; i < numTM; i++)
+    {
+        if (trailmap.x >= transportModes[i].minAffTh && trailmap.x <= transportModes[i].maxAffTh)
+        {
+            affordColor = transportModes[i].TMColor;
+        }
+    }
+    
+    TransportsAffordanceMap[id.xy] = affordColor;
+
+}
+
+
+#pragma kernel DrawAgentTransport
+
+
+RWTexture2D<float4> AgentTransportMap;
+
+[numthreads(16, 1, 1)]
+void DrawAgentTransport(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents)
+    {
+        return;
+    }
+
+    Agent agent = agents[id.x];
+	
+    int cellX = (int) agent.position.x;
+    int cellY = (int) agent.position.y;
+    
+    float4 affordmap = TransportsAffordanceMap[int2(cellX, cellY)];
+    
+    if (affordmap.x == 0
+        && affordmap.y == 0
+        && affordmap.z == 0
+        && affordmap.w == 0)
+    {
+        AgentTransportMap[int2(cellX, cellY)] = 1;
+
+    }
+    else
+    {
+        AgentTransportMap[int2(cellX, cellY)] = affordmap;
+    }
+    
+    
+}
+
+
+#pragma kernel UpdateAgentsTM
+
+[numthreads(16, 1, 1)]
+void UpdateAgentsTM(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents)
+    {
+        return;
+    }
+    
+    float4 patchAffAtAgentPos = AgentTransportMap[int2(agents[id.x].position)];
+
+    for (uint j = 0; j < numTM; j++)
+    {
+        if (patchAffAtAgentPos.x == transportModes[j].TMColor.x
+            && patchAffAtAgentPos.y == transportModes[j].TMColor.y
+            && patchAffAtAgentPos.z == transportModes[j].TMColor.z
+            && patchAffAtAgentPos.w == transportModes[j].TMColor.w)
+        {
+            agents[id.x].TMIndex = j;
+            break;
+        }
+    }
+    
+}
+
+
+#pragma kernel DisplayAll
+
+float4 displayColor;
+RWTexture2D<float4> SimpleDistribPatchLayerMap;
+RWTexture2D<float4> EnvironmentLayerMap;
+RWTexture2D<float4> DisplayAllMap;
+
+[numthreads(16, 16, 1)]
+void DisplayAll(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+
+    float4 networkmap = TrailMap[id.xy];
+    float4 envmap = EnvironmentLayerMap[id.xy];
+    float4 distribhotspotmap = SimpleDistribPatchLayerMap[id.xy];
+
+    float4 colour = 0;
+    
+    colour = envmap;
+    
+    for (uint i = 0; i < numSpecies; i++)
+    {
+        float4 mask = float4(i == 0, i == 1, i == 2, i == 3);
+        
+        if (distribhotspotmap.x > 0
+            && distribhotspotmap.y > 0
+            && distribhotspotmap.z > 0
+            && distribhotspotmap.w > 0)
+        {
+            colour = SimpleDistribPatchLayerMap[id.xy] * displayColor;
+        }
+        else if (networkmap.x > 0
+            && networkmap.y > 0
+            && networkmap.z > 0
+            && networkmap.w > 0)
+        {
+            colour = speciesSettings[i].colour * dot(networkmap, mask);
+        }
+        //colour += speciesSettings[i].colour * dot(trailmap, mask);
+
+    }
+    
+    DisplayAllMap[id.xy] = colour;
+
+}
+
+
+#pragma kernel InitiateInfraCostEvaluation
+
+RWStructuredBuffer<int> costInfraEval;
+
+[numthreads(1, 1, 1)]
+void InitiateInfraCostEvaluation()
+{
+    
+    for (uint i = 0; i < numTM; i++)
+    {
+        costInfraEval[i] = 0;
+    }
+    
+}
+
+
+// Evaluate resulting network at each generation
+#pragma kernel EvalInfraCost
+
+[numthreads(16, 16, 1)]
+void EvalInfraCost(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float4 affordmap = TransportsAffordanceMap[id.xy];
+
+    if (affordmap.x == 0.0
+            && affordmap.y == 0.0
+            && affordmap.z == 0.0
+            && affordmap.w == 0.0)
+    {
+        return;
+    }
+    
+    for (uint i = 0; i < numTM; i++)
+    {
+        float4 TMaffColor = transportModes[i].TMColor;
+        
+        if (affordmap.x == TMaffColor.x
+            && affordmap.y == TMaffColor.y
+            && affordmap.z == TMaffColor.z
+            && affordmap.w == TMaffColor.w
+            )
+        {
+            InterlockedAdd(costInfraEval[i], 1);
+            break;
+        }
+        
+    }
+}
+
+#pragma kernel InitiateAgentsCostEvaluation
+
+RWStructuredBuffer<int> costAgentsEval;
+
+[numthreads(1, 1, 1)]
+void InitiateAgentsCostEvaluation()
+{
+    
+    for (uint i = 0; i < numTM; i++)
+    {
+        costAgentsEval[i] = 0;
+    }
+    
+}
+
+#pragma kernel EvalAgentsCost
+
+[numthreads(16, 1, 1)]
+void EvalAgentsCost(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents)
+    {
+        return;
+    }
+    
+    for (uint i = 0; i < numAgents; i++)
+    {
+        for (uint j = 0; j < numTM; j++)
+        {
+            if ((uint) agents[id.x].TMIndex == j)
+            {
+                //costAgentsEval[j] += 1;
+                InterlockedAdd(costAgentsEval[i], 1);
+                break;
+            }
+        }
+    }
+    
+}
+
+
+#pragma kernel InitConvergenceTrailDiff
+
+RWStructuredBuffer<int> convTrailDiffBuffer;
+//float errTrailDiff;
+
+[numthreads(1, 1, 1)]
+void InitConvergenceTrailDiff(uint3 id : SV_DispatchThreadID)
+{
+    convTrailDiffBuffer[0] = 0;
+    //errTrailDiff = 0.2;
+}
+
+
+
+#pragma kernel ConvergenceTrailDiff
+
+RWTexture2D<float4> PreviousTrailMap;
+RWTexture2D<float4> CurrentTrailMap;
+
+
+[numthreads(16, 16, 1)]
+void ConvergenceTrailDiff(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float4 currtrail = CurrentTrailMap[id.xy];
+    float4 prevtrail = PreviousTrailMap[id.xy];
+    
+    //if ((currtrail.x != 0 && prevtrail.x != 0)
+    //    || (currtrail.x == 0.0 && prevtrail != 0.0)
+    //    || (currtrail.x != 0.0 && prevtrail == 0.0))
+    //{
+    //    if (currtrail.x == prevtrail.x)
+    //    {
+    //        //int diff = (currtrail.x - prevtrail.x) * 1000;
+    //        //InterlockedAdd(convTrailDiffBuffer[0], diff);
+    //        InterlockedAdd(convTrailDiffBuffer[0], 1);
+    //    }
+    //}
+    
+    if (currtrail.x == 0.0 && prevtrail.x == 0.0)
+    {
+        
+    }
+    else
+    {
+        if (currtrail.x == prevtrail.x)
+        {
+            //int diff = (currtrail.x - prevtrail.x) * 1000;
+            //InterlockedAdd(convTrailDiffBuffer[0], diff);
+            InterlockedAdd(convTrailDiffBuffer[0], 1);
+        }
+    }
+    
+}

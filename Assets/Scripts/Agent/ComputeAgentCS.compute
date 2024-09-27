@@ -1,0 +1,470 @@
+#pragma kernel UpdateAgent
+
+struct Agent
+{
+    float2 position;
+    float angle;
+    int4 speciesMask;
+    int speciesIndex;
+
+    int siteIndexOrigin;
+    int siteIndexTarget;
+    int TMIndex;
+    int completeTravels;
+    int previousCompleteTravels;
+};
+
+struct SpeciesSettings
+{
+    float moveSpeed;
+
+    int viewAngle;
+    int depthViewOffset;
+    int viewSensorWidth;
+	
+    float4 colour;
+};
+
+struct TransportMode
+{
+    float4 TMColor;
+    float minAffTh;
+    float maxAffTh;
+    float TMspeed;
+    float numPassing;
+};
+
+struct Hotspot
+{
+    float2 location;
+    int visitFreq;
+    float attractiveness;
+};
+
+
+struct MultiLayeredEnvData
+{
+    int2 sensorPos;
+    float sumPath;
+    float sumLandFieldIndex;
+    float sumHeight;
+};
+
+struct LandData
+{
+    float affordanceIndex;
+    float appearanceThreshold;
+    float landXTh;
+    float4 landColor;
+};
+
+RWStructuredBuffer<SpeciesSettings> speciesSettings;
+//uint numSpecies;
+
+RWStructuredBuffer<Agent> agents;
+uint numAgents;
+
+RWStructuredBuffer<TransportMode> transportModes;
+uint numTM;
+
+RWStructuredBuffer<Hotspot> hotspots;
+uint numHotspots;
+
+RWStructuredBuffer<LandData> landsSettings;
+int numLandsSettings;
+
+Texture2D<float4> AgentImpactMap;
+Texture2D<float4> TrailMap;
+Texture2D<float4> TMAffordanceMap;
+
+Texture2D<float4> OriginalHeightMap;
+Texture2D<float4> OriginalLandFieldMap;
+
+
+int width;
+int height;
+
+int seed;
+
+float deltaTime;
+//float trailFactor;
+float time;
+
+
+// Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
+uint hash(uint state)
+{
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    return state;
+}
+
+float scaleToRange01(uint state)
+{
+    return state / 4294967295.0;
+}
+
+// Function to get the sign of a number
+float sign(float x)
+{
+    return (x > 0.0) ? 1.0 : ((x < 0.0) ? -1.0 : 0.0);
+}
+
+float PowLaw(RWStructuredBuffer<Hotspot> hotspots, int originIndex, int indexHotspotToEvaluate)
+{
+    float hotspotDist = distance(hotspots[originIndex].location, hotspots[indexHotspotToEvaluate].location);
+    //return hotspots[indexHotspotToEvaluate].attractiveness / pow(hotspotDist * hotspots[indexHotspotToEvaluate].visitFreq, 2);
+    return hotspots[indexHotspotToEvaluate].attractiveness / pow(hotspots[indexHotspotToEvaluate].visitFreq, 2);
+}
+
+int generateBiasedRandomInt(RWStructuredBuffer<Hotspot> hotspots, int numHotspots, float randomFloat)
+{
+    int totalFreq = 0;
+    
+    for (int k = 0; k < numHotspots; k++)
+    {
+        totalFreq += hotspots[k].attractiveness;
+    }
+    
+    float randNum = randomFloat * totalFreq;
+    
+    float cumulWeight = 0.0f;
+    for (int j = 0; j < numHotspots; j++)
+    {
+        cumulWeight += hotspots[j].attractiveness;
+
+        if (cumulWeight >= randNum)
+        {
+            return j;
+        }
+            
+    }
+    
+    return -1;
+}
+
+int generateBiasedRandomIntExcluding(RWStructuredBuffer<Hotspot> hotspots, int numHotspots, float randomFloat, int indexToExclude)
+{
+    if (numHotspots == 2)
+    {
+        if (indexToExclude == 0)
+        {
+            return 1;
+        }
+        return 0;
+    }
+    
+    
+    float totalWeight = 0.0f;
+    float cumulWeightUntilExcludeIndexMinus1 = 0.0f;
+    float cumulWeightUntilExcludeIndex = 0.0f;
+   
+    for (int k = 0; k < numHotspots; k++)
+    {
+        float selectionWeight = PowLaw(hotspots, indexToExclude, k);
+        
+        if (k <= indexToExclude - 1
+            || (indexToExclude != 0 && k == 0)
+            )
+        {
+            cumulWeightUntilExcludeIndexMinus1 += selectionWeight;
+        }
+        
+        if (k <= indexToExclude)
+        {
+            cumulWeightUntilExcludeIndex += selectionWeight;
+        }
+
+        
+        totalWeight += selectionWeight;
+
+    }
+    
+    float randCumulWeight = randomFloat * totalWeight;
+    
+    if ((randCumulWeight > cumulWeightUntilExcludeIndexMinus1)
+        && (randCumulWeight <= cumulWeightUntilExcludeIndex)
+        )
+    {
+        if (indexToExclude == numHotspots - 1)
+        {
+            return 0;
+        }
+        else
+        {
+            return indexToExclude + 1;
+        }
+    }
+    else
+    {
+        float cumulWeight = 0.0f;
+        for (int j = 0; j < numHotspots; j++)
+        {
+            cumulWeight += PowLaw(hotspots, indexToExclude, j);
+
+            if (cumulWeight >= randCumulWeight)
+            {
+                return j;
+            }
+            
+        }
+    }
+    
+    return -1;
+}
+
+MultiLayeredEnvData senseEnvData(int2 sensorPos)
+{
+    MultiLayeredEnvData data;
+    
+    data.sensorPos = sensorPos;
+    data.sumPath = TrailMap[sensorPos].x;
+    data.sumHeight = OriginalHeightMap[sensorPos].x;
+    
+    float4 originalColor = OriginalLandFieldMap[sensorPos];
+    
+    for (int i = 0; i < numLandsSettings; i++)
+    {
+        if (originalColor.x == landsSettings[i].landColor.x &&
+            originalColor.y == landsSettings[i].landColor.y &&
+            originalColor.z == landsSettings[i].landColor.z &&
+            originalColor.w == landsSettings[i].landColor.w)
+        {
+            data.sumLandFieldIndex = landsSettings[i].affordanceIndex;
+            
+            return data;
+        }
+    }
+    
+    return data;
+}
+
+bool agentArriveAtTarget(Agent agent, SpeciesSettings settings)
+{
+    return distance(agent.position, hotspots[agent.siteIndexTarget].location) <= (settings.moveSpeed * deltaTime) ? true : false;
+}
+
+
+[numthreads(16, 1, 1)]
+void UpdateAgent(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numAgents)
+    {
+        return;
+    }
+
+
+    Agent agent = agents[id.x];
+    SpeciesSettings settings = speciesSettings[agent.speciesIndex];
+
+    float2 pos = agents[id.x].position;
+
+    //uint random = hash(pos.y * width + pos.x + hash(id.x));
+    uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+    
+    float minStimuliWeight = 3.40282347E+38;
+    int2 locMinWeight = 0;
+    
+    //====================================================================================================================================================
+	////////////////////////////////////////////////////////////// Target Selection //////////////////////////////////////////////////////////////////////
+    //====================================================================================================================================================
+   
+    if (agentArriveAtTarget(agent, settings))
+    {
+        
+        agent.position = hotspots[agent.siteIndexTarget].location;
+        agents[id.x].siteIndexOrigin = agent.siteIndexTarget;
+        
+        //hotspots[agents[id.x].siteIndexOrigin].visitFreq += 1;
+        
+        uint randomNum = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+        //uint randomNum = hash(pos.y * width + pos.x + hash(id.x));
+        float randomFlt01 = scaleToRange01(randomNum);
+        
+        agents[id.x].siteIndexTarget = generateBiasedRandomIntExcluding(hotspots, numHotspots, randomFlt01, agent.siteIndexOrigin);
+        
+        InterlockedAdd(agents[id.x].completeTravels, 1);
+
+        return;
+        
+    }
+
+    
+    //====================================================================================================================================================
+    ///////////////////////////////////////////////////////////// Desire Path Depth View ///////////////////////////////////////////////////////////////
+    //====================================================================================================================================================
+    
+    float sensorAngleRad = radians(float(settings.viewAngle));
+    float2 targetDirNorm = normalize(hotspots[agents[id.x].siteIndexTarget].location - agents[id.x].position);
+    float targetAngle = atan2(targetDirNorm.y, targetDirNorm.x);
+    
+    //float headAngleRanged = atan2(headDirNorm.y, headDirNorm.x) < 0 ? atan2(headDirNorm.y, headDirNorm.x) + 2 * 3.14159265358979 : atan2(headDirNorm.y, headDirNorm.x);
+    
+    float sensorAngleLeft = targetAngle + sensorAngleRad;
+    float sensorAngleRight = targetAngle - sensorAngleRad;
+    
+    float viewOffsetExtTh = settings.depthViewOffset + uint(settings.viewSensorWidth - 1) / 2;
+    float viewOffsetIntTh = settings.depthViewOffset - uint(settings.viewSensorWidth - 1) / 2;
+    
+    int2 ptnLeftAngleExtSense = int2(agent.position + float2(cos(sensorAngleLeft), sin(sensorAngleLeft)) * viewOffsetExtTh);
+    int2 ptnRightAngleExtSense = int2(agent.position + float2(cos(sensorAngleRight), sin(sensorAngleRight)) * viewOffsetExtTh);
+    
+    int2 ptnLeftAngleIntSense = int2(agent.position + float2(cos(sensorAngleLeft), sin(sensorAngleLeft)) * viewOffsetIntTh);
+    int2 ptnRightAngleIntSense = int2(agent.position + float2(cos(sensorAngleRight), sin(sensorAngleRight)) * viewOffsetIntTh);
+    
+    int2 thSenseX = int2(agent.position.x - viewOffsetExtTh, agent.position.x + viewOffsetExtTh);
+    int2 thSenseY = int2(agent.position.y - viewOffsetExtTh, agent.position.y + viewOffsetExtTh);
+        
+    int minX = min(agent.position.x, min(ptnLeftAngleIntSense.x, min(ptnRightAngleIntSense.x, min(ptnRightAngleExtSense.x, min(ptnLeftAngleExtSense.x, min(thSenseX.x, thSenseX.y))))));
+    int maxX = max(agent.position.x, max(ptnLeftAngleIntSense.x, max(ptnRightAngleIntSense.x, max(ptnRightAngleExtSense.x, max(ptnLeftAngleExtSense.x, max(thSenseX.x, thSenseX.y))))));
+    int minY = min(agent.position.y, min(ptnLeftAngleIntSense.y, min(ptnRightAngleIntSense.y, min(ptnRightAngleExtSense.y, min(ptnLeftAngleExtSense.y, min(thSenseY.x, thSenseY.y))))));
+    int maxY = max(agent.position.y, max(ptnLeftAngleIntSense.y, max(ptnRightAngleIntSense.y, max(ptnRightAngleExtSense.y, max(ptnLeftAngleExtSense.y, max(thSenseY.x, thSenseY.y))))));
+
+    minX = max(0, minX);
+    maxX = min(width, maxX);
+    minY = max(0, minY);
+    maxY = min(height, maxY);
+
+    //float sensorResult;
+    
+    MultiLayeredEnvData dataAgent = senseEnvData(agent.position);
+    //MultiLayeredEnvData dataTarget = senseEnvData(hotspots[agent.siteIndexTarget].location);
+    
+    int viewThInf = int(viewOffsetIntTh * sqrt(2) / 2);
+    
+    float2 sumWeightedDir = float2(0.0, 0.0);
+    float sumWeight = 0;
+
+    int foundTrailPixel = 0;
+    float2 dirAgentNorm = float2(cos(agents[id.x].angle), sin(agents[id.x].angle));
+    
+    
+    for (int i = minX; i <= maxX; i++)
+    {
+        for (int j = minY; j <= maxY; j++)
+        {
+            if (i <= viewThInf
+                && i >= -viewThInf
+                && j <= viewThInf
+                && j >= -viewThInf)
+            {
+                continue;
+            }
+            
+            float2 dirPixel = float2(i, j) - agent.position;
+            float2 dirPixelNorm = normalize(dirPixel);
+
+            if (length(dirPixel) <= viewOffsetExtTh && length(dirPixel) >= viewOffsetIntTh)
+            {
+                if (acos(dot(targetDirNorm, dirPixelNorm)) <= sensorAngleRad)
+                {
+                    
+                    MultiLayeredEnvData localData = senseEnvData(int2(i, j));
+                    
+                    if (localData.sumPath > 0.0
+                        //&& dot(dirPixelNorm, headDirNorm) > 0.0
+                        )
+                    {
+                        foundTrailPixel += 1;
+                    }
+                    
+                    float heightWeight = localData.sumHeight - dataAgent.sumHeight;
+                    
+                    float pathWeight =
+                        (((1 + dot(dirPixelNorm, targetDirNorm))) / 2) *
+                    //dot(dirPixelNorm, targetDirNorm)
+                    (
+                    //+ inertiaWeight * (1 + dot(dirPixelNorm, dirAgentNorm)) / 2
+                    //+ trailWeight * 
+                    localData.sumPath);
+                    
+                    sumWeight += pathWeight;
+                    sumWeightedDir += pathWeight * dirPixelNorm;
+                    //}
+
+                }
+            }
+        }
+
+    }
+    //float2 mainDir = sumWeightedDir / sumWeight;
+    //float2 mainDirNorm = normalize(mainDir);
+    
+    float2 trailDir = sumWeightedDir / sumWeight;
+    float2 trailDirNorm = normalize(trailDir);
+    
+
+    float2 mainDir = float2(0.0, 0.0);
+    //float2 dir = normalize((trailWeight * trailDirNorm + (1 - trailWeight) * targetDirNorm));
+    float trailTargetDot = dot(trailDirNorm, targetDirNorm);
+    
+    if (foundTrailPixel == 0)
+    {
+        mainDir = targetDirNorm;
+
+    }
+    else
+    {
+        if (trailTargetDot < 0.0)
+        {
+            mainDir = targetDirNorm;
+        }
+        else
+        {
+            if (trailTargetDot >= 0.5)
+            {
+                mainDir =
+                trailDirNorm
+                //normalize(targetDirNorm
+                //* (1 - trailTargetDot)
+                //+ trailDirNorm * trailTargetDot)
+                ;
+
+            }
+            else
+            {
+                mainDir =
+                targetDirNorm;
+
+                //normalize((targetDirNorm + trailDirNorm) / 2);
+
+            }
+        }
+    }
+    
+    //====================================================================================================================================================
+    ///////////////////////////////////////////////////////////// Update Agent Position //////////////////////////////////////////////////////////////////
+    //====================================================================================================================================================
+
+    float2 mainDirNorm = normalize(mainDir);
+    
+    agents[id.x].angle = atan2(mainDirNorm.y, mainDirNorm.x);
+    
+    float2 direction = float2(cos(agents[id.x].angle), sin(agents[id.x].angle));
+    
+    // Update position
+    float2 newPos = agents[id.x].position + direction * deltaTime * settings.moveSpeed;
+    
+	// Clamp position to map boundaries, and pick new random move dir if hit boundary
+    if (newPos.x < 0 || newPos.x >= width || newPos.y < 0 || newPos.y >= height)
+    {
+        float rndFlt = scaleToRange01(hash(random));
+        //float randomAngle = scaleToRange01(random) * 2 * 3.14159265358979;
+        
+        int randomHotspotIndex = generateBiasedRandomInt(hotspots, numHotspots, rndFlt);
+        int randomTargetIndex = generateBiasedRandomIntExcluding(hotspots, numHotspots, rndFlt, randomHotspotIndex);
+
+        newPos = hotspots[randomHotspotIndex].location;
+        agents[id.x].siteIndexTarget = randomTargetIndex;
+        
+    }
+		
+    agents[id.x].position = newPos;
+
+}
+

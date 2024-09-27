@@ -1,0 +1,65 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel OriginalHeightMapUpdate
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float> OriginalHeightMap;
+
+int width;
+int height;
+
+
+struct Hill
+{
+    float2 coord;
+    float width;
+    float amplitude;
+};
+
+RWStructuredBuffer<Hill> hills;
+int hillsCount;
+
+float xCenter;
+float yCenter;
+
+float Gaussian(float x, float sigma)
+{
+    return exp(-(x * x) / (sigma * sigma)); // / (2 * 3.1415 * sigma);
+}
+
+[numthreads(8, 8, 1)]
+void OriginalHeightMapUpdate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+
+    float x = id.x / float(width);
+    float y = id.y / float(height);
+
+    //float4 sum = 0;
+    //float4 impactHill = ;
+    
+    //for (int offsetX = -1; offsetX <= 1; offsetX++)
+    //{
+    //    for (int offsetY = -1; offsetY <= 1; offsetY++)
+    //    {
+    //        int sampleX = min(width - 1, max(0, id.x + offsetX));
+    //        int sampleY = min(height - 1, max(0, id.y + offsetY));
+            
+    //        float weight = Gaussian(sqrt(offsetX * offsetX + offsetY * offsetY), hills[i].width);
+    //        sum += weight;
+
+    //    }
+    //}
+        
+    //float4 blurredHeight = sum / 9;
+    
+    ////blurredHeight = impactHill * (1 - diffuseWeight) + blurredHeight * diffuseWeight;
+    
+    //OriginalHeightMap[id.xy] = blurredHeight;
+}
+
+
+

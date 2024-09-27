@@ -1,0 +1,63 @@
+#pragma kernel InitiateEvaluation
+
+RWStructuredBuffer<int> totalPixelPerTransport;
+int numAffGrad;
+
+[numthreads(1, 1, 1)]
+void InitiateEvaluation()
+{
+    
+    for (int i = 0; i < numAffGrad; i++)
+    {
+        totalPixelPerTransport[i] = 0;
+    }
+    
+}
+
+
+#pragma kernel EvaluateNetworkInfraCost
+
+RWTexture2D<float4> NetworkMapToEvaluate;
+
+RWStructuredBuffer<float4> affordanceGrad;
+
+int width;
+int height;
+
+[numthreads(16, 16, 1)]
+void EvaluateNetworkInfraCost(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float4 networkmap = NetworkMapToEvaluate[id.xy];
+    
+    if (networkmap.x == 0.0
+            && networkmap.y == 0.0
+            && networkmap.z == 0.0
+            && networkmap.w == 0.0)
+    {
+        return;
+    }
+    
+    else
+    {
+        for (int i = 0; i < numAffGrad; i++)
+        {
+            if (networkmap.x == affordanceGrad[i].x
+            && networkmap.y == affordanceGrad[i].y
+            && networkmap.z == affordanceGrad[i].z
+            && networkmap.w == affordanceGrad[i].w)
+            {
+                InterlockedAdd(totalPixelPerTransport[i], 1);
+
+            }
+        }
+    }
+}
+
+
+
+

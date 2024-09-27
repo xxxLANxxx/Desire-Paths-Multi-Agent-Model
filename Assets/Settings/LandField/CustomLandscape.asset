@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2faef1fdc2ed9024184a1b471c4a9b4f, type: 3}
+  m_Name: CustomLandscape
+  m_EditorClassIdentifier: 
+  XOffset: 0
+  YOffset: 0
+  octaves:
+  - frequency: 2
+    amplitude: 0.842
+  - frequency: 6
+    amplitude: 0.239
+  landsSettings:
+  - landResistanceIndex: 2.5
+    appearanceThreshold: 0
+    landXTh: 0
+    landColor: {r: 0.0047169924, g: 0.47071654, b: 1, a: 0}
+  - landResistanceIndex: 1.39
+    appearanceThreshold: 0.3
+    landXTh: 0.268
+    landColor: {r: 0.92941177, g: 0.9499499, b: 0.40392157, a: 0}
+  - landResistanceIndex: 1.3
+    appearanceThreshold: 0.4
+    landXTh: 0.608
+    landColor: {r: 0.14626406, g: 0.5377358, b: 0, a: 0}
+  - landResistanceIndex: 1.7
+    appearanceThreshold: 0.8
+    landXTh: 0.852
+    landColor: {r: 0.5849056, g: 0.5849056, b: 0.5849056, a: 0}

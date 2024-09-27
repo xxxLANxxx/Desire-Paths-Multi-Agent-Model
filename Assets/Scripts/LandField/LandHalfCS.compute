@@ -1,0 +1,65 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel OriginalLandFieldUpdate
+
+RWTexture2D<float4> OriginalLandFieldMap;
+
+int width;
+int height;
+
+int seed;
+
+struct Octave
+{
+    float frequency;
+    float amplitude;
+};
+
+RWStructuredBuffer<Octave> octaves;
+int octaveCount;
+
+float xOffset;
+float yOffset;
+
+struct Land
+{
+    float affordanceIndex;
+    float appearanceThreshold;
+    float landXTh;
+    float4 landColor;
+};
+
+RWStructuredBuffer<Land> landsSettings;
+int landCount;
+
+[numthreads(8, 8, 1)]
+void OriginalLandFieldUpdate(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint) width || id.y < 0 || id.y >= (uint) height)
+    {
+        return;
+    }
+    
+    float x = id.x / float(width);
+    float y = id.y / float(height);
+    
+    for (int i = 0; i < landCount; i++)
+    {
+        if (id.x > (uint) (landsSettings[i].landXTh * width))
+        {
+            if (i == landCount - 1)
+            {
+                OriginalLandFieldMap[id.xy] = landsSettings[i].landColor;
+                continue;
+            }
+            
+            if (id.x <= (uint) (landsSettings[i + 1].landXTh * width))
+            {
+                OriginalLandFieldMap[id.xy] = landsSettings[i].landColor;
+            }
+
+        }
+
+    }
+
+}
+

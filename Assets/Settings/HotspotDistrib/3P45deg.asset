@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ecc212e2a324db04e824fdcf413a1b7e, type: 3}
+  m_Name: 3P45deg
+  m_EditorClassIdentifier: 
+  scaleFactor: 7
+  displayColor: {r: 0, g: 1, b: 0, a: 0}
+  hotspotsSettings:
+  - location: {x: 0.3, y: 0.3}
+    visitFreq: 1
+    attractiveness: 4.4
+    name: Left
+  - location: {x: 0.7, y: 0.3}
+    visitFreq: 1
+    attractiveness: 5.8
+    name: Right
+  - location: {x: 0.6, y: 0.5}
+    visitFreq: 1
+    attractiveness: 1
+    name: Top
